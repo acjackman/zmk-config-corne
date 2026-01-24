@@ -1,0 +1,19 @@
+default_install_hook_types:
+  - pre-commit
+  - commit-msg
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks # Enables fast path
+    rev: v6.0.0 # This is ignored for fast path detection
+    hooks:
+      - id: check-toml
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-added-large-files
+
+  - repo: "https://github.com/crate-ci/committed"
+    rev: bb02f309663f9baced8dbd5fdd80c6369ddf3efd
+    hooks:
+      - id: committed
+        stages: [commit-msg]
