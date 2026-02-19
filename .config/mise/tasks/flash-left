@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+#MISE description="Flash firmware to the left half via Nice!Nano bootloader"
+exec "$(dirname "$0")/flash" left

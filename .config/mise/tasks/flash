@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+#MISE description="Flash firmware to a keyboard part via Nice!Nano bootloader"
+#MISE hide=true
+set -euo pipefail
+
+part="$1"
+
+commit=$(git rev-parse --short HEAD)
+firmware_dir=$(ls -d .tmp/*_${commit}/ 2>/dev/null | head -1)
+if [ -z "$firmware_dir" ]; then
+  echo "No local firmware found for commit ${commit}, downloading..."
+  mise run download-firmware >&2
+  firmware_dir=$(ls -d .tmp/*_${commit}/ 2>/dev/null | head -1)
+  if [ -z "$firmware_dir" ]; then
+    echo "Failed to download firmware for commit ${commit}" >&2
+    exit 1
+  fi
+fi
+uf2_file=$(ls "${firmware_dir}"corne_"${part}"*.uf2 2>/dev/null | head -1)
+if [ -z "$uf2_file" ]; then
+  echo "No corne_${part} .uf2 file found in $firmware_dir" >&2
+  exit 1
+fi
+
+echo "Firmware: $uf2_file"
+echo "Put the $(echo "$part" | tr '[:lower:]' '[:upper:]') half into bootloader mode (double-tap reset)..."
+
+while [ ! -d /Volumes/NICENANO ]; do
+  sleep 1
+done
+
+echo "NICENANO volume detected, copying firmware..."
+sleep 2
+cp -X "$uf2_file" /Volumes/NICENANO/
+echo "Done! $(echo "$part" | tr '[:lower:]' '[:upper:]') flashed successfully."
