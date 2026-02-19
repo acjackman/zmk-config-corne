@@ -3,6 +3,28 @@
 set -euo pipefail
 
 branch=$(git branch --show-current)
+
+if [ "$branch" = "main" ]; then
+  # On main, download from GitHub Releases (more durable than Actions artifacts)
+  commit_sha=$(git rev-parse --short HEAD)
+  git fetch --tags
+  tag=$(git tag --points-at HEAD | grep -E '^v[0-9]+' | head -1 || true)
+
+  if [ -z "$tag" ]; then
+    echo "Error: HEAD ($commit_sha) on main does not have a release tag." >&2
+    echo "This commit may not have a passing build yet, or CI hasn't finished tagging." >&2
+    echo "Wait for CI to complete, or switch to a feature branch to download from Actions artifacts." >&2
+    exit 1
+  fi
+
+  output_dir=".tmp/${tag}_${commit_sha}"
+  mkdir -p "$output_dir"
+  gh release download "$tag" --dir "$output_dir" --pattern "*.uf2"
+  echo "$output_dir"
+  exit 0
+fi
+
+# Feature branch: download from the latest GitHub Actions run
 run_id=$(gh run list --branch "$branch" --limit 1 --json databaseId --jq '.[0].databaseId')
 if [ -z "$run_id" ]; then
   echo "No runs found for branch $branch" >&2
